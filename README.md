@@ -1,6 +1,6 @@
 # Adapted-bootstrap
 
-Exemple of how to run the adapted bootstrap described in Sulis et al., 2017.
+Exemple of how to run the adapted bootstrap described in Sulis et al., 2017 and Sulis et al., in prep.
 
 IEEE link to the paper: https://ieeexplore.ieee.org/document/8081377
 
