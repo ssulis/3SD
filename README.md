@@ -1,8 +1,5 @@
-# Adapted-bootstrap
+# Semi-supervised Standardized Detection (3SD)
 
-Exemple of how to run the adapted bootstrap described in Sulis et al., 2017 and Sulis et al., in prep.
+Exemple of how to run the 3SD algorithm described in Sulis et al., 2021 (submitted).
 
-IEEE link to the paper: https://ieeexplore.ieee.org/document/8081377
-
-ArXiv link to the paper: https://ui.adsabs.harvard.edu/abs/2017arXiv170606657S/abstract
-
+TBD
