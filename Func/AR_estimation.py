@@ -3,15 +3,17 @@
 
 '''
 FONCTIONS RELATED TO AUTOREGRESSIVE PROCESS
+
 - AR NOISE GENERATION
 - EVALUATION OF THEORETICAL Power Spectral Density (PSD)
 - ESTIMATION OF AR ORDER AND PARAMETERS
-- CERIA FOR AR ORDER SELECTION
+- CRITERIA FOR AR ORDER SELECTION
 
 @author: ssulis
 @author contact: sophia.sulis@lam.fr
 
 '''
+
 
 from numpy import *
 import numpy as np
@@ -20,13 +22,14 @@ from math import *
 
 from numpy.linalg import inv
 
-#%%***************************************************************************#
+#%***************************************************************************#
 # Generation AR noise process
 # INPUTS: 
 # coefs:   Is the array with coefficients, e.g. a=array([a1,a2]).
 # sigma:   The white noise (zero-mean normal in this case) standard deviation.
 # n:       Number of points to generate.
-# OUTPUT : AR time series + Measured standard deviation
+# OUTPUTS : AR time series + Measured standard deviation
+#*****************************************************************************#
 
 def ARgenerator(pfunc,n,burnin=0):
 
@@ -57,6 +60,7 @@ def ARgenerator(pfunc,n,burnin=0):
 # sigma:    The white noise (zero-mean normal in this case) standard deviation.
 # n:        Number of points to generate.
 # OUTPUT : Theoretical PSD of AR noise
+#*****************************************************************************#
 
 def AR_DSPth( pfunc, N):
     
@@ -75,7 +79,8 @@ def AR_DSPth( pfunc, N):
 #%%***************************************************************************#
 # Estimation of AR order, coefficients and  estimated pred. error var.
 # Inputs : Input time series (X), cut-off order (max) and AR critetion
-# Outputs : Best order, estimated pred. error var. (Varp) and coefs (alpha)
+# Outputs : coefficients (alpha) and estimated pred. error var. (Varp) 
+#*****************************************************************************#
 
 def AR_estimation(X, argfunc):
 
@@ -107,7 +112,8 @@ def AR_estimation(X, argfunc):
 
 #%%***************************************************************************#
 # Criterion to chose the best order
-    
+#*****************************************************************************#
+   
 def ARcriterion(criter, Varp, N, p, X=[]):
     
     if criter =='FPE':
@@ -127,7 +133,8 @@ def ARcriterion(criter, Varp, N, p, X=[]):
         return Varp * ( 1 + (p+1)/N*np.log(N) )
 
 #%%***************************************************************************#
-# Evaluation of  estimated pred. error var.
+# Estimated pred. error var.
+#*****************************************************************************#
 
 def Prediction_error_power_estimate(X, p):
         
