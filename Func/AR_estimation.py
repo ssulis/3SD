@@ -8,6 +8,9 @@ FONCTIONS RELATED TO AUTOREGRESSIVE PROCESS
 - ESTIMATION OF AR ORDER AND PARAMETERS
 - CERIA FOR AR ORDER SELECTION
 
+@author: ssulis
+@author contact: sophia.sulis@lam.fr
+
 '''
 
 from numpy import *
