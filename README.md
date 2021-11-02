@@ -8,7 +8,7 @@
  
  and
  
- - ``Example2_no_NTS_available.py'', which implements the case where no NTS of the stochastic noise is available. In this case, the NTS is estimated from the RV series under test.
+ - ``Example2_no_NTS_available.py'', which implements the case where no NTS of the stochastic noise is available. In this case, the NTS is estimated from the RV series under test. (Code not uploaded yet)
  
 The different steps are detailled in the python codes.
 
