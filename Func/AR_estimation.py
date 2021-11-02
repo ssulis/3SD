@@ -65,7 +65,7 @@ def ARgenerator(pfunc,n,burnin=0):
 def AR_DSPth( pfunc, N):
     
     coefs,sigma2 = pfunc
-    sigma        = sigma2**0.5
+    sigma = sigma2**0.5
 
     o = len(coefs)
     filtre = np.zeros(N)
@@ -73,7 +73,7 @@ def AR_DSPth( pfunc, N):
     for i in range(1, o+1):
         filtre[i] = -coefs[i-1]
     DSP_th = np.fft.fftshift(1.0*(abs(np.fft.fft(filtre)))**2);
-    DSP_th = sigma2**0.5/DSP_th;
+    DSP_th = sigma**2/DSP_th
     return DSP_th
     
 #%%***************************************************************************#
@@ -108,7 +108,7 @@ def AR_estimation(X, argfunc):
     Varp, alp = Prediction_error_power_estimate(X, order)
     alpha = -np.array(alp.T)[0]
     
-    return [alpha,Varp]
+    return [alpha,Varp**0.5]
 
 #%%***************************************************************************#
 # Criterion to chose the best order
@@ -183,4 +183,3 @@ def Prediction_error_power_estimate(X, p):
     Var_p = 1.0/N/4 * np.sum((X[p:N] + model[p:N])**2)
    
     return Var_p, -alpha
-
