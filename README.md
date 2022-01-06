@@ -14,4 +14,7 @@ The different steps are detailed in the python codes.
 
 For practical implementation, we note that the procedure is versatile in the sense that the specific couple (test, periodogram) is left to the user, and the procedure may adapt to different noise sources, null training samples (if available), and time sampling grids. 
 
+Note: to run the codes, you need Python3 and the following libraries:
+>> numpy, matplotlib, astropy, lmfit, PyAstronomy, math, tqdm, statsmodels
+
  
