@@ -15,7 +15,7 @@ Input datasets: synthetic RV dataset described in Sec. 5.3 of the paper
 
 Studied configuration:
     - a null training sample (NTS) of the stochastic noise is avalaible (TL != emptyspace)
-    - no need for a parametric model of the stochastic noise source to be estimated on the dataset (M_n == emptyspace)
+    - no need for a parametric model of the stochastic noise source to be estimated on the dataset (Mn == emptyspace in Algo.1)
     - an ancillary data for stellar activity is available (c = logR'HK)
                                                            
 Credits: S. Sulis, D. Mary , L. Bigot, and M. Deleuil
@@ -43,8 +43,8 @@ from Detection_tests import *
 from AR_estimation import *
 from Result_files import *
 
-from Algorithm_1_3SD import *
-from Algorithm2 import *
+from Algorithm1_3SD import *
+from Algorithm2_pvalue import *
 
 
 #%%***************************************************************************#
@@ -65,7 +65,7 @@ for i in range(N):
     logRHK[i]   = float(adump[3])
 fileR.close()
 
-print('The input RV time series spans %f days and contains %d points'%((time[-1]-time[0])/24/3600, N))
+print('The input RV time series spans %f days and contains %d points'%((time[-1]-time[0]), N))
 
 plt.figure(figsize=(10,9))
 plt.subplot(311)
@@ -79,8 +79,6 @@ plt.ylabel("log. R'HK ")
 # Load the NTS series for granulation noise
 # Here, the NTS corresponds to RV solar data generated with 3D simulations
 # see Sulis, S., Mary, D., & Bigot, L. 2020, A&A, 635, A146 for details
-#
-# Note: This file contains L=5 time series regularly sampled 
 #*****************************************************************************#
  
 filename_NTS = "Files/3DMHD_solar_velocities.txt"
@@ -101,13 +99,12 @@ for i in range(Nnts):
     adump       = fileR.readline().split()
     time_NTS[i]     = float(adump[0]) # regularly sampled dates [days]
     for il in range(L): rv_NTS[il,i] = float(adump[1+il])
-    grid_NTS[i] = int(adump[-1]) # if 1 => point is one the sampling grid of the RV series under test, if 0 = not in the sampling grid
+    grid_NTS[i] = int(adump[-1]) # 1 if on the grid of the observed RV, 0 otherwise 
 fileR.close()
 
-# we sample the NTS time series as the observations
+# we sample the NTS time series as the observations (check where grid_NTS is "1")
 time_NTS_obs = time_NTS[grid_NTS==1]
-rv_NTS_obs = np.zeros((L,N))
-for il in range(L):  rv_NTS_obs[il] = rv_NTS[il,grid_NTS==1]
+rv_NTS_obs   = rv_NTS[:,grid_NTS==1]
 
 plt.subplot(313)
 # for il in range(L): plt.plot(time_NTS/24/3600,rv_NTS[il],'.')
@@ -115,7 +112,7 @@ for il in range(L): plt.plot(time_NTS_obs/24/3600,rv_NTS_obs[il],'.')
 plt.xlabel('time [days]')
 plt.ylabel("NTS [m/s]")
 plt.savefig('Outputs/Example1/Fig1_Input_dataset.png')
-       
+
 #%%***************************************************************************#
 # Evaluate the test statistic on this dataset: procedure 3SD 
 #*****************************************************************************#
@@ -128,7 +125,7 @@ Ttype = 'Max test'                  # The selected detection test to be applied 
 freq_grid = None                    # the considered set of frequencies, defaut:None
 
 # If TL not ∅ 
-TL    = np.copy(rv_NTS_obs)            # optional: the null training sample sampled as the observed RV, defaut: None
+TL    = np.copy(rv_NTS_obs)         # optional: the null training sample sampled as the observed RV, defaut: None
 
 # If Mn not ∅ 
 Mn    = None                        # optional: stochastic noise component --> not considered in Example1, defaut: None
@@ -143,37 +140,45 @@ Md            = [model_d, theta_d_ini, theta_d_bound]  # optional: model of the 
 c = np.copy(logRHK)                  # optional: activity indicators time series, defaut: None
 
 # RUN 3SD PROCEDURE
-freq_test, test_value, hat_theta_d, delta_d = Algorithm1_3SD(x, 
-                                                             Ptype, Ttype, 
-                                                             freq_grid=freq_grid,
-                                                             TL = TL,
-                                                             Mn = Mn,
-                                                             Md = Md,
-                                                             c  = c,
-                                                             check = True)
+check = True
+output_Algo1 = Algorithm1_3SD(x, 
+                              Ptype = Ptype, 
+                              Ttype = Ttype, 
+                              freq_grid=freq_grid,
+                              TL = TL,
+                              Mn = Mn,
+                              Md = Md,
+                              c  = c,
+                              check = check)
 
-plt.savefig('Outputs/Example1/Fig2_3SD_procedure.png')
+if check:
+    freq_test, test_value, hat_theta_d, delta_d, hat_theta_n, fig, fig2 = output_Algo1
+    fig.savefig('Outputs/Example1/Fig2_3SD_procedure.png')
+    fig2.savefig('Outputs/Example1/Fig3_3SD_procedure.png')
+else:
+    freq_test, test_value, hat_theta_d, delta_d, hat_theta_n = output_Algo1
 
-print('Results from Algorithm 1 for time series under test is t = %.2f'%test_value)
-print('It correspond to frequency f = %.2f muHz(period = %.2f days) '%(freq_test*1e6, 1.0/freq_test/3600/24))
 
-print("\nEstimated Md parameters fitted on input dataset:")
-print("Model: %s: "%model_d)
-print("Estimated parameters:",hat_theta_d)
-print("Confidence interval:", delta_d)
+print('n\Results from Algorithm 1 for time series under test is t = %.2f'%test_value)
+print('It correspond to frequency f = %.2f muHz (period = %.2f days) '%(freq_test*1e6, 1.0/freq_test/3600/24))
+
+if model_d:
+    print("\nEstimated Md parameters fitted on input dataset:")
+    print("Model: %s: "%model_d)
+    print("Estimated parameters:",hat_theta_d)
+    print("Perturbation interval:", delta_d)
           
+
 #%%===========================================================================#
-# To compute Algorithm2 (= estimation of FAP levels of the 3SD procedure) with an NTS (TL):
+# To compute Algorithm2 (= estimation of p-values of the 3SD procedure) with an NTS (TL):
 # --> we need a parametric noise model to be able to generate L>5 NTS series with
 # parametric bootstrap (see Sec.5 of the paper). 
-#
 #=============================================================================#
 
 # We fit an autoregressive (AR) process to the NTS (see Sec. 5.3)
+fileNTS = 'Files/Params_AR_MHDfit.dat' # file where we save the fitted AR process 
 
-filesave_ARgranu = 'Files/Params_AR_MHDfit.dat' # file where we save the fitted AR process 
-
-if os.path.isfile(filesave_ARgranu) is False:
+if os.path.isfile(fileNTS) is False: # generate the file just ones, to save time
     
     # fit AR
     pmax      = 10
@@ -184,9 +189,8 @@ if os.path.isfile(filesave_ARgranu) is False:
     hat_theta_n = AR_estimation(rvf, argfunc)
     
     # save the file
-    fileW = open(filesave_ARgranu, "w")
-    for i in range(len(hat_theta_n[0])):
-        fileW.write('%f\n' %(hat_theta_n[0][i])) 
+    fileW = open(fileNTS, "w")
+    for i in range(len(hat_theta_n[0])): fileW.write('%f\n' %(hat_theta_n[0][i])) 
     fileW.write('%f\n' %(hat_theta_n[1])) 
     fileW.close()
     
@@ -195,12 +199,11 @@ if os.path.isfile(filesave_ARgranu) is False:
     print("Estimated AR coefs:",hat_theta_n[0])
     print("Estimated AR std: %.2f\n"%hat_theta_n[1])
     
-    
 
 else: # to save time, we can load the results
-    nparams = sum(1 for line in open(filesave_ARgranu))
+    nparams = sum(1 for line in open(fileNTS))
     hat_theta_n = [np.zeros(nparams-1),0]
-    fileR = open(filesave_ARgranu, "r");
+    fileR = open(fileNTS, "r");
     for i in range(nparams-1):
         lignes = fileR.readline(); 
         adump  = lignes.split(); 
@@ -225,17 +228,16 @@ plt.ylabel('Periodogram [m2/s]')
 plt.xlim([min(freq)*1e6, max(freq)*1e6])
 plt.ylim([0.03,20])
 plt.legend()
-plt.savefig('Outputs/Example1/Fig3_Parametric_model_for_NTS.png')
-
+plt.savefig('Outputs/Example1/Fig4_Parametric_model_for_NTS.png')
 
 #%%***************************************************************************#
-# Evaluate the False Alarm probability threshold (Algorithm 2)
+# Evaluate the p-value of Algorithm 1  (Algorithm 2)
 #*****************************************************************************#
 """
-this loop can take several hours to days to compute (for B=1 and b=1000 on classical laptop ~ 25-30 min)
+this loop can take several hours to compute (for B=1 and b=1000 on classical laptop ~ 25-30 min)
 we advice to test it first for low (B,b) values 
 we also advise to save iteratively the results in file (see 'Outputs/') to avoid
-loosing all calculations in case of technical process
+loosing all calculations in case of technical problems
 """
 
 # DEFINE INPUTS
@@ -247,17 +249,15 @@ freq_grid = None                     # the considered set of frequencies, defaut
 
 B, b = 20, 1000                   # Number of Monte Carlo simulations, typical values are 100 and 1000, respectively
 
-target_FAP = 1.0/100                # Target false alarm rate, defaut: 1%
-
-# If TL not ∅ 
-TL_data = [time_NTS, rv_NTS, grid_NTS] # optional: the null training sample dates, data, and grid, defaut: None
-L       = L                            # number of null training series TL, defaut=None
-
 # If Mn not ∅ :
 model_n = 'AR'                   # optional: Chosen parametric model for NTS, defaut=None
-Mn      = [model_n, hat_theta_n] # optional: stochastic noise component fitted to the NTS (model, estimated parameters(,) defaut=None
+theta_n = hat_theta_n            # optional: estimated parameters, defaut=None
+L       = L                      # optional: number of series to be generated, defaut=1
+theta_n_ini = None
+theta_n_bounds = None
+Mn = [model_n, time_NTS, grid_NTS, theta_n_ini, theta_n_bounds] 
 
-# If TL = ∅ and Mn = ∅ :
+# If Mn = ∅ :
 sig2       = None               # estimated variance of WGN, defaut: None 
 delta_sig2 = None               # perturbation interval for hat_sig2, defaut: None
 
@@ -270,6 +270,8 @@ Md            = [model_d, theta_d_ini, theta_d_bound]  # optional: model of the 
 theta_d   = hat_theta_d        # Estimated parameters for model Md fitted on x (x=RV series under test)
 delta_d  = delta_d             # perturbation interval for hat_theta_d
 
+priors = 'uniform' # Priors to randomly select the theta_d +/- delta_d parameters, defaut: 'uniform'
+
 # If Md not ∅ if Md(c)
 c = np.copy(logRHK)     # optional: activity indicators time series, defaut: None
 
@@ -279,47 +281,46 @@ if not os.path.exists(save_path):os.makedirs(save_path)
 
 
 # RUN 3SD PROCEDURE
-outputs_Algo2  = Algorithm2(x, Ptype, Ttype,
-                           freq_grid=freq_grid,
-                           B=B, b=b,
-                           target_FAP=target_FAP,
-                           TL = TL_data, L=L, Mn = Mn, theta_n=hat_theta_n,
-                           sig2=sig2, delta_sig2=delta_sig2,
-                           Md = Md, theta_d=theta_d, delta_d=delta_d,
-                           c  = c,
-                           save_path = save_path,
-                           check = False)
+outputs_Algo2  = Algorithm2_pvalue(x, Ptype, Ttype,
+                            freq_grid=freq_grid,
+                            B=B, b=b,
+                            Mn = Mn, theta_n=theta_n, L=L,
+                            sig2=sig2, delta_sig2=delta_sig2,
+                            Md = Md, theta_d=theta_d, delta_d=delta_d, priors=priors,
+                            c  = c,
+                            save_path = save_path,
+                            check = False)
 
-gam_mean, FAP_mean, gamma_star = outputs_Algo2
+t_mean, pvalue_mean = outputs_Algo2
 
 #%%***************************************************************************#
-# Plot the FAP estimates obtained from Algorithm 2
+# Plot the P-values estimates obtained from Algorithm 2
 #*****************************************************************************#
 
 # from Result_files import *
 
-test_ij, ftest_ij, gam, FAP = read_individual_runs(save_path, b)
-gam_mean, FAP_mean, target_FAP, gamma_star = read_results_Algo2(save_path)
+test_ij, ftest_ij, test_t, pvalue = read_individual_runs(save_path, b)
+t_mean, pvalue_mean = read_results_Algo2(save_path)
 
 plt.figure()
 
-plt.loglog(gam[0], FAP[0],'0.75', label='FAP from Algorithm 2')
-for i in range(1,B): plt.loglog(gam[i], FAP[i],'0.75')
-plt.loglog(gam_mean, FAP_mean,'k-', label='mean FAP from Algorithm 2')
+plt.loglog(test_t[0], pvalue[0],'0.75', label='P-value from Algorithm 2')
+for i in range(1,B): plt.loglog(test_t[i], pvalue[i],'0.75')
+plt.loglog(t_mean, pvalue_mean,'k-', label='mean P-value from Algorithm 2')
 
-tmp = np.abs(gam_mean-test_value)
+tmp = np.abs(t_mean-test_value)
 wtmp = np.where(tmp==min(tmp))[0][0]
-plt.plot(test_value, FAP_mean[wtmp],'ro', label="Observed test's value")
-plt.plot([test_value, test_value], [min(FAP_mean),FAP_mean[wtmp]],'r--')
-plt.plot([min(gam_mean),test_value], [FAP_mean[wtmp],FAP_mean[wtmp]],'r--')
+plt.plot(test_value, pvalue_mean[wtmp],'ro', label="Observed test's value")
+plt.plot([test_value, test_value], [min(pvalue_mean),pvalue_mean[wtmp]],'r--')
+plt.plot([min(t_mean),test_value], [pvalue_mean[wtmp],pvalue_mean[wtmp]],'r--')
 plt.legend()
 
-plt.xlabel(r'$\gamma$: thresholds')
-plt.ylabel(r'FAP')
-plt.xlim([min(gam_mean), max(gam_mean)])    
+plt.xlabel(r'$t$')
+plt.ylabel(r'$P$-value')
+plt.xlim([min(t_mean), max(t_mean)])    
 plt.ylim([1e-3,1.1])    
 
-plt.savefig('Outputs/Example1/Fig4_Algorithm2_outputs.png')
+plt.savefig('Outputs/Example1/Fig5_Algorithm2_outputs.png')
 
 #%%***************************************************************************#
 # Check: 
@@ -331,5 +332,5 @@ plt.figure()
 plt.hist(ftest_ij.flatten(),bins=500) 
 plt.ylabel('Count') 
 plt.xlabel(r'Frequencies [$\mu$Hz]')
-plt.savefig('Outputs/Example1/Fig5_Test_distribution.png')
+plt.savefig('Outputs/Example1/Fig6_Test_distribution.png')
 
