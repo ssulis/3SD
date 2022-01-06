@@ -21,10 +21,10 @@ warnings.filterwarnings("ignore")
 
 #%%***************************************************************************#
 # Save the intermediate results of Algorithm 2:
-# tests, corresponding test's frequencies, FAP levels, FAP values
+# tests, corresponding test's frequencies,  test levels, p-values
 #*****************************************************************************#
     
-def save_individual_runs(save_path, test_ij, ftest_ij, gam, FAP):
+def save_individual_runs(save_path, test_ij, ftest_ij, t, pvalue):
     
     ii = 0
     filesave =  save_path + "outputs_intermediate_b="+str(ii)+".txt" 
@@ -39,17 +39,17 @@ def save_individual_runs(save_path, test_ij, ftest_ij, gam, FAP):
     for j in range(b): fileW.write("%f " %(test_ij[j]))
     fileW.write("\n#\n# Corresponding test's frequencies [muHz]:\n")
     for j in range(b): fileW.write("%f " %(ftest_ij[j]*1e6))
-    fileW.write("\n#\n# FAP levels:\n")
-    for j in range(len(gam)): fileW.write("%f " %(gam[j]))
-    fileW.write("\n#\n# FAPs:\n")
-    for j in range(len(FAP)): fileW.write("%f " %(FAP[j]))
+    fileW.write("\n#\n# test levels:\n")
+    for j in range(len(t)): fileW.write("%f " %(t[j]))
+    fileW.write("\n#\n# p-values:\n")
+    for j in range(len(pvalue)): fileW.write("%f " %(pvalue[j]))
     fileW.close()
     
     return
 
 #%%***************************************************************************#
 # Read the intermediate results of Algorithm 2:
-# OUTPUTS: tests, corresponding test's frequencies, FAP levels, FAP values
+# OUTPUTS: tests, corresponding test's frequencies, test levels, p-values
 #*****************************************************************************#
     
 def read_individual_runs(save_path,b):
@@ -57,7 +57,7 @@ def read_individual_runs(save_path,b):
 
     nfiles = len(glob.glob1(save_path,"outputs_intermediate_b=*.txt"))
     
-    test_ij, ftest_ij, gam, FAP = [np.zeros((nfiles, b)) for _ in range(4)]
+    test_ij, ftest_ij, t, pvalue = [np.zeros((nfiles, b)) for _ in range(4)]
     counter=0
     for k in range(nfiles):
         filename = save_path + "outputs_intermediate_b="+str(k)+".txt" 
@@ -79,27 +79,27 @@ def read_individual_runs(save_path,b):
             fileR.readline(); fileR.readline();
             ligne = fileR.readline()
             adump = ligne.split()
-            gam[counter]   = [float(adump[m]) for m in range(len(adump))]
+            t[counter]   = [float(adump[m]) for m in range(len(adump))]
             
             fileR.readline(); fileR.readline();
             ligne = fileR.readline()
             adump = ligne.split()
-            FAP[counter]   = [float(adump[m]) for m in range(len(adump))]
+            pvalue[counter]   = [float(adump[m]) for m in range(len(adump))]
             counter+=1
             fileR.close()
    
-    return test_ij[:counter], ftest_ij[:counter], gam[:counter], FAP[:counter]
+    return test_ij[:counter], ftest_ij[:counter], t[:counter], pvalue[:counter]
 
 
 #%%***************************************************************************#
 # Save the final results of Algorithm 2+
-# inputs +  gam_mean, FAP_mean, gamma_star
+# inputs +  test_mean, pvalue_mean
 #*****************************************************************************#
 
         
-def save_results_Algo2(save_path, inputs, gam_mean, FAP_mean, gamma_star):
+def save_results_Algo2(save_path, inputs, t_mean, pvalue_mean):
         
-    x, Ptype, Ttype, freq_grid, B, b, target_FAP, TL, L, Mn, theta_n, sig2, delta_sig2, Md, theta_d, delta_d, c = inputs
+    x, Ptype, Ttype, freq_grid, B, b, L, Mn, theta_n, sig2, delta_sig2, Md, theta_d, delta_d, c = inputs
 
     filesave =  save_path + "Algorithm2_final_outputs.txt" 
     fileW = open(filesave, "w");
@@ -120,14 +120,12 @@ def save_results_Algo2(save_path, inputs, gam_mean, FAP_mean, gamma_star):
     fileW.write('# MC size B: %d \n'%B)
     fileW.write('# MC size b: %d \n'%b)
     
-    text = 'yes (L='+str(L)+')' if TL is not None else None
-    fileW.write('# Does a NTS was provided? %s\n'%text)
     
     if Mn is None: 
         fileW.write('# Does a model Mn was provided ? No\n')
         fileW.write('# Mn input parameters: N/A\n')    
     else:
-        Mn_model, theta_n = Mn
+        Mn_model = Mn[0]
         fileW.write('# Does a model Mn was provided ? Yes, model = %s\n'%Mn_model)
         fileW.write('# Mn input parameters: ')
         tn  = str(theta_n)
@@ -157,15 +155,10 @@ def save_results_Algo2(save_path, inputs, gam_mean, FAP_mean, gamma_star):
     fileW.write('# Results ================\n')
     fileW.write('#\n')           
 
-    fileW.write("# FAP levels:\n")
-    for j in range(len(gam_mean)): fileW.write("%f " %(gam_mean[j]))
-    fileW.write("\n#\n# FAPs:\n")
-    for j in range(len(FAP_mean)): fileW.write("%f " %(FAP_mean[j]))
-
-    fileW.write('\n#\n# TARGET FAP:\n')
-    fileW.write('%f'%target_FAP)   
-    fileW.write('\n#\n# Corresponding FAP threshold:\n')
-    fileW.write('%f'%gamma_star) 
+    fileW.write("# test levels:\n")
+    for j in range(len(t_mean)): fileW.write("%f " %(t_mean[j]))
+    fileW.write("\n#\n# P-value:\n")
+    for j in range(len(pvalue_mean)): fileW.write("%f " %(pvalue_mean[j]))
 
     fileW.close()     
     
@@ -173,7 +166,7 @@ def save_results_Algo2(save_path, inputs, gam_mean, FAP_mean, gamma_star):
 
 #%%***************************************************************************#
 # Read the final results of Algorithm 2+
-# Outputs:  gam_mean, FAP_mean, gamma_star
+# Outputs:  gam_mean, pvalue_mean
 #*****************************************************************************#
 
         
@@ -186,29 +179,19 @@ def read_results_Algo2(save_path):
         
         fileR = open(filename, "r");
         
-        [fileR.readline() for _ in range(21)]
+        [fileR.readline() for _ in range(20)]
         ligne = fileR.readline()
         adump = ligne.split()
-        gam_mean  = [float(adump[m]) for m in range(len(adump))]
+        t_mean  = [float(adump[m]) for m in range(len(adump))]
 
         fileR.readline(); fileR.readline();
         ligne = fileR.readline()
         adump = ligne.split()
-        FAP_mean   = [float(adump[m]) for m in range(len(adump))]
+        pvalue_mean   = [float(adump[m]) for m in range(len(adump))]
                 
-        fileR.readline(); fileR.readline();
-        ligne = fileR.readline()
-        adump = ligne.split()
-        target_FAP   = float(adump[0]) 
-        
-        fileR.readline(); fileR.readline();
-        ligne = fileR.readline()
-        adump = ligne.split()
-        gamma_star   = float(adump[0]) 
-
         fileR.close()
    
-    return gam_mean, FAP_mean, target_FAP, gamma_star
+    return t_mean, pvalue_mean
 
           
 

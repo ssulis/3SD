@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 
 """
-FUNCTIONS RELATED TO THE NUISANCE NOISE COMPONENT
+FUNCTIONS RELATED TO THE NUISANCE NOISE COMPONENT "d" of Eq.(1)
 
 @author: ssulis
 @author contact: sophia.sulis@lam.fr
@@ -40,6 +40,11 @@ def Md_generate(time, Md_model, theta_d, IC):
     if Md_model == 'Model_Md_Example1':
         x_Md = Md_Example1(theta_d, time, IC)
 
+    # If Md_model is chosen as beta*IC 
+    # (=model taken as example in Example2)
+    if Md_model == 'Model_Md_Example2':
+        x_Md = Md_Example2(theta_d, time, IC)
+        
     return x_Md
 
 #%%***************************************************************************#
@@ -79,11 +84,25 @@ def Md_estimate(x, Md_model, IC, params_ini, par_bounds ):
         c_fit_err    = out.params.get('c').stderr        
         delta_d = [beta_fit_err, a_fit_err, b_fit_err, c_fit_err]
 
+    # If Md_model is chosen as beta*IC + 3rd order polynomial function of time
+    # (=model taken as example in Example1)    
+    if Md_model ==  'Model_Md_Example2':               
+        
+        param_ini = set_dict_params_Md_Example2(params_ini, par_bounds)
+        out = minimize(residuals_Md_Example2, param_ini, args = (time, IC, rv, rv_err))        
+        # print(out.message)
+        # print(out.params)
+
+        beta_fit = out.params.get('beta').value  
+        theta_d = [beta_fit]               
+        
+        beta_fit_err = out.params.get('beta').stderr      
+        delta_d = [beta_fit_err]
+        
     # You can implement here other parametric noise
     # [...]
         
     return theta_d, delta_d
-
 
 #%%***************************************************************************#
 #  Functions related to model "Md_Example1"
@@ -122,20 +141,51 @@ def residuals_Md_Example1(param_tofit, t, IC, y, yerr):
     err    = (y-model)/yerr
     return err
 
+#%%***************************************************************************#
 # Generation of synthetic ancillary data time series
+#*****************************************************************************#
 def generate_synthetic_c(time, c, model, theta_d):
     
     N = len(time)   
     c_ij = np.zeros(N)
     
-    if model == 'Model_Md_Example1':
+    if model == 'Model_Md_Example1' or model == 'Model_Md_Example2':
         std_c = np.std(c-theta_d[0]*c) # this nuisance model involved c as c*beta 
         c_ij = np.random.normal(0, std_c, N)
         
     return c_ij
 
 #%%***************************************************************************#
-#  Functions related to model "Md_Example1"
+#  Functions related to model "Md_Example2"
+#*****************************************************************************#
+
+# set dictionary of parameters
+def set_dict_params_Md_Example2(par_input,par_bounds):
+    beta = par_input[0]
+    beta_min, beta_max = par_bounds
+    param_output = Parameters()
+    # print(beta,beta_min, beta_max)
+    param_output.add('beta', value=beta, min=beta_min, max=beta_max)
+    return  param_output
+
+# model "Md_Example2" 
+def Md_Example2(beta, t, IC):
+    model = beta*IC
+    return model
+
+# residuals to be used in lmfit    
+def residuals_Md_Example2(param_tofit, t, IC, y, yerr):
+    
+    beta = param_tofit.get('beta').value    
+    model = Md_Example2(beta,t,IC)
+    err    = (y-model)/yerr
+    return err
+
+
+
+
+#%%***************************************************************************#
+#  Functions for other noise models
 #*****************************************************************************#
 
 # You can implement here any other parametric noise functions you want following
