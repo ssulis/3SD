@@ -120,7 +120,7 @@ def Algorithm1_3SD(x,
     # l.11 to 13 - If there is a stochastic white noise n    
     if TL is None and Mn is None:
         hat_sig2 = np.var(res)
-        denominator = np.zeros(N) + hat_sig2
+        denominator = np.zeros(len(numerator)) + hat_sig2
     
     # l.15 - Compute the standardized periodogram
     pstand = numerator / denominator
