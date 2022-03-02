@@ -159,7 +159,7 @@ def Algorithm1_3SD(x,
         plt.legend()    
 
     if check:
-        return ftest, test, hat_theta_d, delta_d, hat_theta_n, fig, fig2
+        return ftest, test, hat_theta_d, delta_d, hat_theta_n,np.var(res), fig, fig2
     else:
-        return ftest, test, hat_theta_d, delta_d, hat_theta_n
+        return ftest, test, hat_theta_d, delta_d, hat_theta_n, np.var(res)
         
