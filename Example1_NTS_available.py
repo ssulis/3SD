@@ -152,11 +152,11 @@ output_Algo1 = Algorithm1_3SD(x,
                               check = check)
 
 if check:
-    freq_test, test_value, hat_theta_d, delta_d, hat_theta_n, fig, fig2 = output_Algo1
+    freq_test, test_value, hat_theta_d, delta_d, hat_theta_n, sig2, fig, fig2 = output_Algo1
     fig.savefig('Outputs/Example1/Fig2_3SD_procedure.png')
     fig2.savefig('Outputs/Example1/Fig3_3SD_procedure.png')
 else:
-    freq_test, test_value, hat_theta_d, delta_d, hat_theta_n = output_Algo1
+    freq_test, test_value, hat_theta_d, delta_d, hat_theta_n, sig2 = output_Algo1
 
 
 print('n\Results from Algorithm 1 for time series under test is t = %.2f'%test_value)
