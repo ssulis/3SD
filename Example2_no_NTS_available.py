@@ -112,6 +112,9 @@ Md            = [model_d, theta_d_ini, theta_d_bound]  # optional: model of the 
 # If Md not ∅ if Md(c)
 c = np.copy(logRHK)                  # optional: activity indicators time series, defaut: None
 
+# Send any additional arguments ?
+argss = None # defaut is None
+
 # RUN 3SD PROCEDURE
 check = True
 output_Algo1 = Algorithm1_3SD(x, 
@@ -122,6 +125,7 @@ output_Algo1 = Algorithm1_3SD(x,
                               Mn = Mn,
                               Md = Md,
                               c  = c,
+                              add_args = argss,
                               check = check)
 
 if check:
@@ -184,6 +188,7 @@ outputs_Algo2  = Algorithm2_pvalue(x, Ptype, Ttype,
                             sig2=sig2, delta_sig2=delta_sig2,
                             Md = Md, theta_d=hat_theta_d, delta_d=delta_d, priors=priors,
                             c  = c,
+                            add_args = argss,
                             save_path = save_path,
                             check = False)
 
@@ -206,14 +211,14 @@ plt.loglog(t_mean, pvalue_mean,'k-', label='mean P-value from Algorithm 2')
 
 tmp = np.abs(t_mean-test_value)
 wtmp = np.where(tmp==min(tmp))[0][0]
-plt.plot(test_value, pvalue_mean[wtmp],'ro', label="Observed test's value")
+plt.plot(test_value, pvalue_mean[wtmp],'ro', label="Observed: t = %.2f, pval(t)=%.2f"%(test_value, pvalue_mean[wtmp]))
 plt.plot([test_value, test_value], [min(pvalue_mean),pvalue_mean[wtmp]],'r--')
 plt.plot([min(t_mean),test_value], [pvalue_mean[wtmp],pvalue_mean[wtmp]],'r--')
 plt.legend()
 
 plt.xlabel(r'$t$')
 plt.ylabel(r'$P$-value')
-# plt.xlim([min(t_mean), max(t_mean)])    
+plt.xlim([min(t_mean), None])    
 plt.ylim([1e-3,1.1])    
 
 plt.savefig('Outputs/Example2/Fig4_Algorithm2_outputs.png')
