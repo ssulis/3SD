@@ -38,6 +38,7 @@ def Algorithm1_3SD(x,
                    Mn = None,
                    Md = None,
                    c  = None,
+                   add_args = None,
                    check = False):
     
     # check the input parameters ==============================================
@@ -73,7 +74,7 @@ def Algorithm1_3SD(x,
     if Md is not None:
         Md_model, theta_d_ini, theta_d_bounds = Md
         try:
-            x_Md = Md_estimate(x, Md_model, c, theta_d_ini, theta_d_bounds)
+            x_Md = Md_estimate(x, Md_model, c, theta_d_ini, theta_d_bounds, argss=add_args)
         except:
             raise ValueError('Problem with the input Md model: impossible to generate the synthetic dataset. ')
     else:
@@ -89,10 +90,10 @@ def Algorithm1_3SD(x,
     if Md is not None:
         
         # l.2 - Estimate the parameters of model Md on x (and c if c)
-        hat_theta_d, delta_d = Md_estimate(x, Md_model, c, theta_d_ini, theta_d_bounds )
+        hat_theta_d, delta_d = Md_estimate(x, Md_model, c, theta_d_ini, theta_d_bounds, argss=add_args )
 
         # l.3 - Compute the data residuals
-        model = Md_generate(time, Md_model, hat_theta_d, c)
+        model = Md_generate(time, Md_model, hat_theta_d, c, argss=add_args)
         model_tot = np.copy(model)
         res  = res - model
     
@@ -159,7 +160,7 @@ def Algorithm1_3SD(x,
         plt.legend()    
 
     if check:
-        return ftest, test, hat_theta_d, delta_d, hat_theta_n,np.var(res), fig, fig2
+        return ftest, test, hat_theta_d, delta_d, hat_theta_n, np.var(res), fig, fig2
     else:
         return ftest, test, hat_theta_d, delta_d, hat_theta_n, np.var(res)
         

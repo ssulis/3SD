@@ -65,6 +65,7 @@ def Algorithm2_pvalue(x,
                sig2=None, delta_sig2=None,
                Md = None, theta_d=None, delta_d=None, priors = 'uniform',
                c  = None,
+               add_args = None,
                save_path = 'Outputs/',
                check = False):
  
@@ -100,8 +101,8 @@ def Algorithm2_pvalue(x,
     if Md is not None:
         Md_model, theta_d_ini, theta_d_bounds = Md
         try:
-            x_Md = Md_generate(time, Md_model, theta_d_ini, c) 
-            x_Md = Md_generate(time, Md_model, theta_d, c) 
+            x_Md = Md_generate(time, Md_model, theta_d_ini, c, argss=add_args) 
+            x_Md = Md_generate(time, Md_model, theta_d, c, argss=add_args) 
         except:
             raise ValueError('Problem with the Md model: impossible to generate the synthetic dataset. ')
         if theta_d is None or delta_d is None : raise ValueError('You need to indicate the estimated parameters of Md (+ their confidence intervals)')
@@ -156,7 +157,7 @@ def Algorithm2_pvalue(x,
             else: 
 
                 # l.10 - Randomly select the WGN variance in interval
-                sig2_ij = rselect(sig2, delta_sig2)
+                sig2_ij = abs(rselect(sig2, delta_sig2))
                 
                 # l.11 - Generate a synthetic WGN and implement vector y_ij
                 y_ij = np.random.normal(0, sig2_ij, N)
@@ -173,10 +174,10 @@ def Algorithm2_pvalue(x,
                     
                   # l.14 - Generate hat_d with model Md and new parameters hat2_theta_d
                   #      - then, implement vector y_il
-                  x_Md = Md_generate(time, Md_model, theta_d_ij, c)
+                  x_Md = Md_generate(time, Md_model, theta_d_ij, c, argss=add_args)
                   #  If c, Generate a synthetic indicators series cij
                   if c is not None: 
-                      c_ij = generate_synthetic_c(time, c, Md_model, theta_d_ij)
+                      c_ij = generate_synthetic_c(time, c, Md_model, theta_d_ij, argss=add_args)
                   else:
                       c_ij = None
 
@@ -187,7 +188,7 @@ def Algorithm2_pvalue(x,
             x_ij = time, y_ij, rv_err 
             
             output = Algorithm1_3SD(x_ij, Ptype=Ptype, Ttype=Ttype, freq_grid=freq_grid, 
-                                    TL = TL_ij, Mn = None, Md = Md, c = c_ij, check=False)        
+                                    TL = TL_ij, Mn = None, Md = Md, c = c_ij, add_args =add_args, check=False)        
             
             ftest_ij[j] = output[0]
             test_ij[j]  = output[1]

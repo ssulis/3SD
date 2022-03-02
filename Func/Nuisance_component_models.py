@@ -27,10 +27,11 @@ warnings.filterwarnings("ignore")
 # time = dates of the observations or NTS time sampling
 # Md_model = chosen model for the nuisance noise component 
 # IC = ancillary time series involved in model Md_model (e.g., logR'HK indexes)
+# argss = potential additional arguments to send to the function
 # Output: One synthetic time series following model Md_model
 #*****************************************************************************#
 
-def Md_generate(time, Md_model, theta_d, IC):
+def Md_generate(time, Md_model, theta_d, IC, argss=None):
 
     N = len(time) # number of data points
     x_Md = np.zeros(N) # initialize: output time series
@@ -53,10 +54,11 @@ def Md_generate(time, Md_model, theta_d, IC):
 # Md_model = chosen model for the nuisance noise component 
 # IC = ancillary time series involved in model Md_model (e.g., logR'HK indexes)
 # params_ini, par_bounds = initial parameters and bounds
+# argss = potential additional arguments to send to the function
 # Output: Estimated parameters and confidence intervals
 #*****************************************************************************#
 
-def Md_estimate(x, Md_model, IC, params_ini, par_bounds ):
+def Md_estimate(x, Md_model, IC, params_ini, par_bounds, argss=None ):
 
     time, rv, rv_err = x # data
     N  = len(time)       # number of data points
@@ -105,6 +107,19 @@ def Md_estimate(x, Md_model, IC, params_ini, par_bounds ):
     return theta_d, delta_d
 
 #%%***************************************************************************#
+# Generation of synthetic ancillary data time series
+#*****************************************************************************#
+def generate_synthetic_c(time, IC, Md_model, theta_d, argss=None):
+    
+    N = len(time)   
+    
+    model = Md_generate(time, Md_model, theta_d, IC, argss=argss)
+    std_c = np.std(IC-model) # this nuisance model involved c as c*beta 
+    c_ij = model + np.random.normal(0, std_c, N)
+        
+    return c_ij
+
+#%%***************************************************************************#
 #  Functions related to model "Md_Example1"
 #*****************************************************************************#
 
@@ -141,19 +156,6 @@ def residuals_Md_Example1(param_tofit, t, IC, y, yerr):
     err    = (y-model)/yerr
     return err
 
-#%%***************************************************************************#
-# Generation of synthetic ancillary data time series
-#*****************************************************************************#
-def generate_synthetic_c(time, c, model, theta_d):
-    
-    N = len(time)   
-    c_ij = np.zeros(N)
-    
-    if model == 'Model_Md_Example1' or model == 'Model_Md_Example2':
-        std_c = np.std(c-theta_d[0]*c) # this nuisance model involved c as c*beta 
-        c_ij = np.random.normal(0, std_c, N)
-        
-    return c_ij
 
 #%%***************************************************************************#
 #  Functions related to model "Md_Example2"
