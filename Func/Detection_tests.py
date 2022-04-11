@@ -19,21 +19,35 @@ warnings.filterwarnings("ignore")
 
 #%***************************************************************************#
 # Detection tests involved in Algorithm 1 (3SD procedure)
+#*****************************************************************************#
+'''
+# Inputs:
 # freq = frequency grid
 # pstand = standardized periodogram (len(pstand) = len(freq))
 # Ttype = Test to be applied to pstand(freq)
+# args  = arguments needed to run test named "Ttype" 
 # Outputs: test value and corresponding pstand's frequency
-#*****************************************************************************#
+'''
     
-def compute_test(freq, pstand, Ttype = 'Max test'):
+def compute_test(freq, pstand, Ttype = 'Max test', flim=0, args = None):
     
     test = np.nan # initialize: test's value
+    freq, pstand = freq[freq>flim], pstand[freq>flim]
+    
     
     # Classical test of the highest periodogram value
     if Ttype == 'Max test':
         test  = np.max(pstand)
         wtest =  np.where(pstand == np.max(pstand))[0][0]
         ftest = freq[wtest]
+
+    # Test of the Nc^th largest periodogram value ("TC" in the paper)
+    if Ttype == 'TC test':
+        NC = args # NC^th largest periodogram value
+        test = np.sort(pstand)[-NC]
+        wtest =  np.where(pstand == test)[0][0]
+        ftest = freq[wtest]
+        
 
     
     # You can implement here other detection tests

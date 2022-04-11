@@ -59,6 +59,7 @@ def rselect(x, x_err, priors = 'uniform', lim1 = np.nan, lim2 = np.nan):
 def Algorithm2_pvalue(x,
                Ptype = 'Lomb-Scargle',
                Ttype = 'Max test', 
+               flim = 0,
                freq_grid=None,
                B=100, b=1000,
                Mn=None, theta_n=None,L=1,
@@ -101,8 +102,8 @@ def Algorithm2_pvalue(x,
     if Md is not None:
         Md_model, theta_d_ini, theta_d_bounds = Md
         try:
-            x_Md = Md_generate(time, Md_model, theta_d_ini, c, argss=add_args) 
-            x_Md = Md_generate(time, Md_model, theta_d, c, argss=add_args) 
+            x_Md = Md_generate(time, Md_model, theta_d_ini, c, args=add_args) 
+            x_Md = Md_generate(time, Md_model, theta_d, c, args=add_args) 
         except:
             raise ValueError('Problem with the Md model: impossible to generate the synthetic dataset. ')
         if theta_d is None or delta_d is None : raise ValueError('You need to indicate the estimated parameters of Md (+ their confidence intervals)')
@@ -173,13 +174,12 @@ def Algorithm2_pvalue(x,
                       theta_d_ij[k] = rselect(theta_d[k], delta_d[k], priors)
                     
                   # l.14 - Generate hat_d with model Md and new parameters hat2_theta_d
-                  #      - then, implement vector y_il
-                  x_Md = Md_generate(time, Md_model, theta_d_ij, c, argss=add_args)
-                  #  If c, Generate a synthetic indicators series cij
-                  if c is not None: 
-                      c_ij = generate_synthetic_c(time, c, Md_model, theta_d_ij, argss=add_args)
+                  x_Md = Md_generate(time, Md_model, theta_d_ij, c, args=add_args)
+                  if c is not None: #  If c, Generate a synthetic indicators series cij
+                      c_ij = generate_synthetic_c(time, c, Md_model, theta_d, args=theta_d_ini)
                   else:
                       c_ij = None
+
 
                   # l.15 - Add it to the synthetic time series under test
                   y_ij += x_Md
@@ -187,7 +187,7 @@ def Algorithm2_pvalue(x,
             # # l.16 - Compute the test statistics with procedure 3DS ===========
             x_ij = time, y_ij, rv_err 
             
-            output = Algorithm1_3SD(x_ij, Ptype=Ptype, Ttype=Ttype, freq_grid=freq_grid, 
+            output = Algorithm1_3SD(x_ij, Ptype=Ptype, Ttype=Ttype, flim=flim, freq_grid=freq_grid, 
                                     TL = TL_ij, Mn = None, Md = Md, c = c_ij, add_args =add_args, check=False)        
             
             ftest_ij[j] = output[0]

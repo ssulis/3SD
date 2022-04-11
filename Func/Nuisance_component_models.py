@@ -27,11 +27,11 @@ warnings.filterwarnings("ignore")
 # time = dates of the observations or NTS time sampling
 # Md_model = chosen model for the nuisance noise component 
 # IC = ancillary time series involved in model Md_model (e.g., logR'HK indexes)
-# argss = potential additional arguments to send to the function
+# args = potential additional arguments to send to the function
 # Output: One synthetic time series following model Md_model
 #*****************************************************************************#
 
-def Md_generate(time, Md_model, theta_d, IC, argss=None):
+def Md_generate(time, Md_model, theta_d, IC, args=None):
 
     N = len(time) # number of data points
     x_Md = np.zeros(N) # initialize: output time series
@@ -54,11 +54,11 @@ def Md_generate(time, Md_model, theta_d, IC, argss=None):
 # Md_model = chosen model for the nuisance noise component 
 # IC = ancillary time series involved in model Md_model (e.g., logR'HK indexes)
 # params_ini, par_bounds = initial parameters and bounds
-# argss = potential additional arguments to send to the function
+# args = additional arguments to send to the function
 # Output: Estimated parameters and confidence intervals
 #*****************************************************************************#
 
-def Md_estimate(x, Md_model, IC, params_ini, par_bounds, argss=None ):
+def Md_estimate(x, Md_model, IC, params_ini, par_bounds, args=None ):
 
     time, rv, rv_err = x # data
     N  = len(time)       # number of data points
@@ -109,13 +109,20 @@ def Md_estimate(x, Md_model, IC, params_ini, par_bounds, argss=None ):
 #%%***************************************************************************#
 # Generation of synthetic ancillary data time series
 #*****************************************************************************#
-def generate_synthetic_c(time, IC, Md_model, theta_d, argss=None):
+def generate_synthetic_c(time, IC, Md_model, theta_d, args=None):
     
     N = len(time)   
     
-    model = Md_generate(time, Md_model, theta_d, IC, argss=argss)
-    std_c = np.std(IC-model) # this nuisance model involved c as c*beta 
+    if Md_model == 'Model_Md_Example1' or Md_model == 'Model_Md_Example2':
+        theta_d_ini = np.copy(args) 
+        model = theta_d_ini[0]*IC # this nuisance model involved c as c*beta 
+            
+    std_c = np.std(IC-model) 
     c_ij = model + np.random.normal(0, std_c, N)
+    # plt.figure()
+    # plt.plot(time, IC,'k.')
+    # plt.plot(time, c_ij,'r.')
+    # stop
         
     return c_ij
 

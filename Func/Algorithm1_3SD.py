@@ -33,6 +33,7 @@ warnings.filterwarnings("ignore")
 def Algorithm1_3SD(x, 
                    Ptype = 'Lomb-Scargle',
                    Ttype = 'Max test', 
+                   flim = 0,
                    freq_grid=None,
                    TL = None,
                    Mn = None,
@@ -74,7 +75,7 @@ def Algorithm1_3SD(x,
     if Md is not None:
         Md_model, theta_d_ini, theta_d_bounds = Md
         try:
-            x_Md = Md_estimate(x, Md_model, c, theta_d_ini, theta_d_bounds, argss=add_args)
+            x_Md = Md_estimate(x, Md_model, c, theta_d_ini, theta_d_bounds, args=add_args)
         except:
             raise ValueError('Problem with the input Md model: impossible to generate the synthetic dataset. ')
     else:
@@ -90,22 +91,22 @@ def Algorithm1_3SD(x,
     if Md is not None:
         
         # l.2 - Estimate the parameters of model Md on x (and c if c)
-        hat_theta_d, delta_d = Md_estimate(x, Md_model, c, theta_d_ini, theta_d_bounds, argss=add_args )
+        hat_theta_d, delta_d = Md_estimate(x, Md_model, c, theta_d_ini, theta_d_bounds, args=add_args )
 
         # l.3 - Compute the data residuals
-        model = Md_generate(time, Md_model, hat_theta_d, c, argss=add_args)
+        model = Md_generate(time, Md_model, hat_theta_d, c, args=add_args)
         model_tot = np.copy(model)
         res  = res - model
     
     # l.4 - Compute the periodogram
     fnum, numerator = periodogram(time*24*3600, res, Ptype=Ptype, freq_grid = freq_grid)
-    
+
     # l.5 to 10 - If there is a stochastic colored noise n
     # if NTS
     if TL is not None: 
         # l.17 - compute data for denominator
         _, denominator = averag_periodo(time*24*3600, TL, len(fnum), Ptype=Ptype, freq_grid = freq_grid)
-        
+  
     # if no NTS
     hat_theta_n = None
     if Mn is not None: 
@@ -121,14 +122,21 @@ def Algorithm1_3SD(x,
     # l.11 to 13 - If there is a stochastic white noise n    
     if TL is None and Mn is None:
         hat_sig2 = np.var(res)
-        denominator = np.zeros(len(numerator)) + hat_sig2
+        denominator = np.zeros(len(freq_grid)) + hat_sig2
+
+    # we consider values with f>flim
+    wpos = np.where(fnum>flim)[0]
+    fnum, numerator = fnum[wpos], numerator[wpos]
+    denominator = denominator[wpos]
     
     # l.15 - Compute the standardized periodogram
     pstand = numerator / denominator
 
+    
     # l.16 - Apply the detection test
-    ftest, test = compute_test(fnum[fnum>0][:10], pstand[fnum>0][:10], Ttype)
-        
+    ftest, test = compute_test(fnum, pstand, Ttype, flim=flim)
+    # print(ftest)
+    # stop        
     # check
     if check:
         fig = plt.figure()

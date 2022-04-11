@@ -3,6 +3,11 @@
 
 """
 FUNCTION RELATED TO THE STOCHASTIC NOISE SOURCE COMPONENT "n" in Eq.(1) of the paper
+
+Implemented models are: 
+    - autoregressive noises
+    - Harvey functions
+    
 @author: ssulis
 @author contact: sophia.sulis@lam.fr
 
@@ -14,11 +19,13 @@ import sys
 import numpy as np
 import matplotlib.pyplot as plt
 
+from math import *
+from numpy.linalg import inv
+
 import lmfit
 from lmfit import minimize, Parameters, fit_report 
 
 # My functions
-from AR_estimation import *
 from Periodograms import *
 
 import warnings
@@ -27,12 +34,15 @@ warnings.filterwarnings("ignore")
 
 #%%***************************************************************************#
 # Generate an estimate of the stochastic noise component based on model Mn_model
+#*****************************************************************************#
+'''
+# Inputs
 # and parameters theta_n
 # time = dates of the observations or NTS time sampling
 # nseries = number of time series to be generated
 # Output: nseries>=1 synthetic time series following model Mn_model
-#*****************************************************************************#
-    
+'''
+ 
 def Mn_generate(time, Mn_model, theta_n,  nseries=1, delmoy='y'):
     
     N  = len(time)       # number of data points
@@ -63,12 +73,14 @@ def Mn_generate(time, Mn_model, theta_n,  nseries=1, delmoy='y'):
 
 #%%***************************************************************************#
 # Estimate the parameters of the stochastic noise component based on model Mn_model
+#*****************************************************************************#
+'''
+# Inputs
 # x = dates of the observations or NTS time sampling if TL, data or data residuals, errors on data points 
 # Mn_model = chosen model for the stochastic noise component 
 # params_ini, par_bounds = initial parameters and bounds
 # Output: Estimated parameters 
-#*****************************************************************************#
-
+'''
 def Mn_estimate(x, Mn_model, params_ini, par_bounds ):
 
     time, rv, rv_err = x # input data
@@ -105,7 +117,177 @@ def Mn_estimate(x, Mn_model, params_ini, par_bounds ):
     return hat_theta_n
 
 #%%***************************************************************************#
-#  Function related to the Harvey profile
+#  Functions related to autoregressive noise processes
+#*****************************************************************************#
+
+
+#******************************
+# Generation AR noise process
+#******************************
+'''
+# INPUTS: 
+# coefs:   Is the array with coefficients, e.g. a=array([a1,a2]).
+# sigma:   The white noise (zero-mean normal in this case) standard deviation.
+# n:       Number of points to generate.
+# OUTPUTS : AR time series + Measured standard deviation 
+'''
+def ARgenerator(pfunc,n,burnin=0):
+
+  coefs,sigma2 = pfunc
+  sigma = sigma2**0.5
+  
+  if(burnin==0): burnin=100*len(coefs)       # Burn-in elements!
+  w=np.random.normal(0,sigma,n+burnin)
+  AR=array([])
+  s=0.0
+  for i in range(n+burnin):
+      if(i<len(coefs)):
+        AR=append(AR,w[i])
+      else:
+        s=0.0
+        for j in range(len(coefs)):
+            s=s+coefs[j]*AR[i-j-1]
+        AR=append(AR,s+w[i])
+  
+  return AR[burnin:]
+
+
+#******************************
+# Theoretical PSD of AR noise
+#******************************
+'''
+# INPUTS: 
+# coefs:     Is the array with coefficients.
+# sigma:    The white noise (zero-mean normal in this case) standard deviation.
+# n:        Number of points to generate.
+# OUTPUT : Theoretical PSD of AR noise
+'''
+
+def AR_DSPth( pfunc, N):
+    
+    coefs,sigma2 = pfunc
+    sigma = sigma2**0.5
+
+    o = len(coefs)
+    filtre = np.zeros(N)
+    filtre[0] = 1.
+    for i in range(1, o+1):
+        filtre[i] = -coefs[i-1]
+    DSP_th = np.fft.fftshift(1.0*(abs(np.fft.fft(filtre)))**2);
+    DSP_th = sigma**2/DSP_th
+    return DSP_th
+    
+#******************************
+# Estimation of AR order, coefficients and  estimated pred. error var.
+#******************************
+'''
+# Inputs : Input time series (X), cut-off order (max) and AR critetion
+# Outputs : coefficients (alpha) and estimated pred. error var. (Varp) 
+'''
+
+def AR_estimation(X, argfunc):
+
+    pmax,criter = argfunc
+
+    N = len(X);
+    X = X - mean(X)		# remove mean
+    
+    # Order estimation
+    crit = np.zeros(pmax)
+    for p in range(1,pmax+1):        
+        Varp, alp = Prediction_error_power_estimate(X, p)  
+        if criter != 'CAT':          
+            crit[p-1] = ARcriterion(criter, Varp, N, p)
+        else:
+            crit[p-1] = ARcriterion(criter, Varp, N, p,X)
+                
+    order = np.where(crit == min(crit))[0]
+    order = np.min(order)+1
+    
+    # Coefficients and  estimated pred. error var.
+    Varp, alp = Prediction_error_power_estimate(X, order)
+    alpha = -np.array(alp.T)[0]
+    
+    return [alpha,Varp**0.5]
+
+#******************************
+# Criterion to chose the best order
+#******************************
+
+'''
+# Implemented options are FPR, CAT, AIC and RIS
+'''
+   
+def ARcriterion(criter, Varp, N, p, X=[]):
+    
+    if criter =='FPE':
+        return Varp * ( (N+p+1)/(N-p-1) )
+
+    if criter =='CAT':
+        som=0
+        for j in range(1,p):
+            Varp_j, _ = Prediction_error_power_estimate(X, p)  
+            som+= (N-j)/(N*Varp_j)
+        return 1.0/N * som - (N-p)/(N*Varp)
+
+    if criter =='AIC':
+        return np.log(Varp) + 2*(p+1)/N
+
+    if criter =='RIS':
+        return Varp * ( 1 + (p+1)/N*np.log(N) )
+
+#******************************
+# Estimated pred. error var.
+#******************************
+
+def Prediction_error_power_estimate(X, p):
+        
+    N = len(X)
+    X = X - mean(X)		# remove mean
+    
+    # Autocovariance matrix (cf. p.244 of Akaike, 1969)    
+    Cxx = [0 for i in range(p+1)]             
+    for il in range(0,p+1):
+        somme = 0.0
+        for i in range(1,N-il):
+            somme += X[i+il] * X[i]
+        Cxx[il]  = [1.0/N * somme]   
+        
+    Cxx_matrix =    np.mat(Cxx)
+
+    # Matrix's index. Note: Cxx(-i)=Cxx(i) 
+    ind_Matrix = [[0 for i in range(p)] for j in range(p)]
+    for ligne in range(0,p):              # line (2 : p), col(:)
+        i=ligne;       
+        for col in range(0,p):            # line (i), col(col)
+            ind_Matrix[ligne][col] = np.abs(i) 
+            i -= 1
+
+	# Fill matrix M_Cxx
+    M_Cxx = np.zeros((p,p))
+    for j in range(p):
+        M_Cxx[j] = np.mat([ Cxx[ind_Matrix[i][j]][0] for i in range(p)])
+    M_Cxx = np.mat(M_Cxx)
+    
+    # Evaluate coefficients alpha_i with inverse of M_Cxx
+    alpha =  inv(M_Cxx)*Cxx[1:]
+    #print (alpha)
+    
+    model = np.zeros(N)
+    model[:p] = X[:p]
+    
+    m = np.arange(0,p)  # i1 = 1:p
+    for nn in range(p,N):
+        i2 = sort(nn - m)
+        model[nn] = np.sum(np.array(alpha.T) * X[i2])
+
+    Var_p = 1.0/N/4 * np.sum((X[p:N] + model[p:N])**2)
+   
+    return Var_p, -alpha
+
+
+#%%***************************************************************************#
+#  Function related to Harvey functions
 #*****************************************************************************#
 
 # set dictionary of parameters
@@ -121,7 +303,7 @@ def set_dict_params_Mn_Harvey(par_input,par_bounds):
     
     return  param_output
 
-# model Harvey (DSP)
+# Harvey function (model the noise power spectral density with Harvey profiles)
 def harveyfunc(params,freq):
     a, b, sig2, index = params
     zeta = 2*np.sqrt(2)/np.pi
@@ -145,7 +327,7 @@ def residuals_Mn_Harvey(param_tofit, t, y):
     err   = periodo[f>0]-model
     return err
 
-# Generate syntehtic time series with Harvey function
+# Generate synthetic time series with Harvey functions
 def Harvey_generator(time,theta_n, N,  delmoy='y'):
 
     # Create Harvey DSP
