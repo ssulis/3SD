@@ -40,7 +40,6 @@ from Periodograms import *
 from Stochastic_component_models import *
 from Nuisance_component_models import *
 from Detection_tests import *
-from AR_estimation import *
 from Result_files import *
 
 from Algorithm1_3SD import *
@@ -112,6 +111,9 @@ Md            = [model_d, theta_d_ini, theta_d_bound]  # optional: model of the 
 # If Md not ∅ if Md(c)
 c = np.copy(logRHK)                  # optional: activity indicators time series, defaut: None
 
+# cut-ioff frequency for test Ttype
+flim = 56e-6
+
 # Send any additional arguments ?
 argss = None # defaut is None
 
@@ -120,6 +122,7 @@ check = True
 output_Algo1 = Algorithm1_3SD(x, 
                               Ptype = Ptype, 
                               Ttype = Ttype, 
+                              flim = flim,
                               freq_grid=freq_grid,
                               TL = TL,
                               Mn = Mn,
@@ -161,7 +164,7 @@ loosing all calculations in case of technical problems
 """
 
 # DEFINE INPUTS
-B, b = 100, 1000                   # Number of Monte Carlo simulations, typical values are 100 and 1000, respectively
+B, b = 100, 1000               # Number of Monte Carlo simulations, typical values are 100 and 1000, respectively
 
 # If Mn not ∅ :
 theta_n = hat_theta_n            # optional: estimated parameters, defaut=None
@@ -182,7 +185,8 @@ if not os.path.exists(save_path):os.makedirs(save_path)
 
 # RUN 3SD PROCEDURE
 outputs_Algo2  = Algorithm2_pvalue(x, Ptype, Ttype,
-                            freq_grid=freq_grid,
+                            flim = flim,
+                            freq_grid=freq_grid, 
                             B=B, b=b,
                             Mn = Mn, theta_n=hat_theta_n, L=L,
                             sig2=sig2, delta_sig2=delta_sig2,
@@ -222,4 +226,16 @@ plt.xlim([min(t_mean), None])
 plt.ylim([1e-3,1.1])    
 
 plt.savefig('Outputs/Example2/Fig4_Algorithm2_outputs.png')
+
+#%%***************************************************************************#
+# Check: 
+# Verify if the test's distribution is close to a uniform distribution
+# if this is not the case: see discussion in paper
+#*****************************************************************************#
+
+plt.figure()
+plt.hist(ftest_ij.flatten(),bins=500) 
+plt.ylabel('Count') 
+plt.xlabel(r'Frequencies [$\mu$Hz]')
+plt.savefig('Outputs/Example2/Fig5_Test_distribution.png')
 

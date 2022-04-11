@@ -40,7 +40,6 @@ from Periodograms import *
 from Stochastic_component_models import *
 from Nuisance_component_models import *
 from Detection_tests import *
-from AR_estimation import *
 from Result_files import *
 
 from Algorithm1_3SD import *
@@ -75,6 +74,7 @@ plt.subplot(312)
 plt.plot(time,logRHK,'k.')
 plt.ylabel("log. R'HK ")
 
+
 #%%***************************************************************************#
 # Load the NTS series for granulation noise
 # Here, the NTS corresponds to RV solar data generated with 3D simulations
@@ -107,7 +107,6 @@ time_NTS_obs = time_NTS[grid_NTS==1]
 rv_NTS_obs   = rv_NTS[:,grid_NTS==1]
 
 plt.subplot(313)
-# for il in range(L): plt.plot(time_NTS/24/3600,rv_NTS[il],'.')
 for il in range(L): plt.plot(time_NTS_obs/24/3600,rv_NTS_obs[il],'.')
 plt.xlabel('time [days]')
 plt.ylabel("NTS [m/s]")
@@ -120,7 +119,7 @@ plt.savefig('Outputs/Example1/Fig1_Input_dataset.png')
 # DEFINE INPUTS
 
 x     = [time, rv, rv_err]          # the serie under test
-Ptype = 'Lomb-Scargle'              # The selected periodogram type, defaut: 'Lomb-Scargle'  
+Ptype = 'FFT'              # The selected periodogram type, defaut: 'Lomb-Scargle'  
 Ttype = 'Max test'                  # The selected detection test to be applied to the periodogra, defaut: 'Max test'
 freq_grid = None                    # the considered set of frequencies, defaut:None
 
@@ -139,16 +138,24 @@ Md            = [model_d, theta_d_ini, theta_d_bound]  # optional: model of the 
 # If Md not ∅ if Md(c)
 c = np.copy(logRHK)                  # optional: activity indicators time series, defaut: None
 
+# cut-ioff frequency for test Ttype
+flim = 56e-6 # in muHz, defaut is None
+
+# Send any additional arguments ?
+argss = None # defaut is None
+
 # RUN 3SD PROCEDURE
 check = True
 output_Algo1 = Algorithm1_3SD(x, 
                               Ptype = Ptype, 
                               Ttype = Ttype, 
-                              freq_grid=freq_grid,
+                              flim = flim,
+                              freq_grid=freq_grid,                           
                               TL = TL,
                               Mn = Mn,
                               Md = Md,
                               c  = c,
+                              add_args = argss,
                               check = check)
 
 if check:
@@ -243,11 +250,11 @@ loosing all calculations in case of technical problems
 # DEFINE INPUTS
 
 x     = [time, rv, rv_err]          # the serie under test
-Ptype = 'Lomb-Scargle'              # The selected periodogram type, defaut: 'Lomb-Scargle'  
+Ptype = 'FFT'              # The selected periodogram type, defaut: 'Lomb-Scargle'  
 Ttype = 'Max test'                  # The selected detection test to be applied to the periodogra, defaut: 'Max test'
 freq_grid = None                     # the considered set of frequencies, defaut: None
 
-B, b = 20, 1000                   # Number of Monte Carlo simulations, typical values are 100 and 1000, respectively
+B, b = 20,1000                   # Number of Monte Carlo simulations, typical values are 100 and 1000, respectively
 
 # If Mn not ∅ :
 model_n = 'AR'                   # optional: Chosen parametric model for NTS, defaut=None
@@ -279,24 +286,26 @@ c = np.copy(logRHK)     # optional: activity indicators time series, defaut: Non
 save_path = 'Outputs/Example1/Algorithm2/'
 if not os.path.exists(save_path):os.makedirs(save_path)
 
+# from Algorithm2_pvalue import *
 
 # RUN 3SD PROCEDURE
 outputs_Algo2  = Algorithm2_pvalue(x, Ptype, Ttype,
+                            flim = flim,
                             freq_grid=freq_grid,
                             B=B, b=b,
                             Mn = Mn, theta_n=theta_n, L=L,
                             sig2=sig2, delta_sig2=delta_sig2,
                             Md = Md, theta_d=theta_d, delta_d=delta_d, priors=priors,
                             c  = c,
+                            add_args = argss,
                             save_path = save_path,
-                            check = False)
+                            check = True)
 
 t_mean, pvalue_mean = outputs_Algo2
 
 #%%***************************************************************************#
 # Plot the P-values estimates obtained from Algorithm 2
 #*****************************************************************************#
-
 # from Result_files import *
 
 test_ij, ftest_ij, test_t, pvalue = read_individual_runs(save_path, b)
@@ -305,19 +314,21 @@ t_mean, pvalue_mean = read_results_Algo2(save_path)
 plt.figure()
 
 plt.loglog(test_t[0], pvalue[0],'0.75', label='P-value from Algorithm 2')
-for i in range(1,B): plt.loglog(test_t[i], pvalue[i],'0.75')
+if B>1:
+    for i in range(1,B): plt.loglog(test_t[i], pvalue[i],'0.75')
 plt.loglog(t_mean, pvalue_mean,'k-', label='mean P-value from Algorithm 2')
 
 tmp = np.abs(t_mean-test_value)
 wtmp = np.where(tmp==min(tmp))[0][0]
-plt.plot(test_value, pvalue_mean[wtmp],'ro', label="Observed test's value")
+plt.plot(test_value, pvalue_mean[wtmp],'ro', label="Observed: t = %.2f, pval(t)=%.2f"%(test_value, pvalue_mean[wtmp]))
 plt.plot([test_value, test_value], [min(pvalue_mean),pvalue_mean[wtmp]],'r--')
 plt.plot([min(t_mean),test_value], [pvalue_mean[wtmp],pvalue_mean[wtmp]],'r--')
 plt.legend()
 
 plt.xlabel(r'$t$')
 plt.ylabel(r'$P$-value')
-plt.xlim([min(t_mean), max(t_mean)])    
+# plt.xlim([min(t_mean), max(t_mean)])    
+plt.xlim([min(t_mean), None])    
 plt.ylim([1e-3,1.1])    
 
 plt.savefig('Outputs/Example1/Fig5_Algorithm2_outputs.png')
