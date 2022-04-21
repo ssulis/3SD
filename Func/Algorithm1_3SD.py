@@ -127,9 +127,9 @@ def Algorithm1_3SD(x,
         denominator = np.zeros(len(freq_grid)) + hat_sig2
 
     # we consider values with f>flim
-    wpos = np.where(fnum>flim)[0]
-    fnum, numerator = fnum[wpos], numerator[wpos]
-    denominator = denominator[wpos]
+    #wpos = np.where(fnum>flim)[0]
+    #fnum, numerator = fnum[wpos], numerator[wpos]
+    #denominator = denominator[wpos]
     
     # l.15 - Compute the standardized periodogram
     pstand = numerator / denominator
