@@ -100,6 +100,8 @@ def Algorithm1_3SD(x,
     
     # l.4 - Compute the periodogram
     fnum, numerator = periodogram(time*24*3600, res, Ptype=Ptype, freq_grid = freq_grid)
+    if freq_grid is None: freq_grid=fnum
+
 
     # l.5 to 10 - If there is a stochastic colored noise n
     # if NTS
