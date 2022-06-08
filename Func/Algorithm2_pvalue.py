@@ -161,7 +161,7 @@ def Algorithm2_pvalue(x,
                 sig2_ij = abs(rselect(sig2, delta_sig2))
                 
                 # l.11 - Generate a synthetic WGN and implement vector y_ij
-                y_ij = np.random.normal(0, sig2_ij, N)
+                y_ij = np.random.normal(0, sig2_ij**0.5, N)
                 
                 TL_ij = None
 
