@@ -33,7 +33,7 @@ warnings.filterwarnings("ignore")
 def Algorithm1_3SD(x, 
                    Ptype = 'Lomb-Scargle',
                    Ttype = 'Max test', 
-                   flim = 0,
+                   flim = None,
                    freq_grid=None,
                    TL = None,
                    Mn = None,
