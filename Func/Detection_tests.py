@@ -29,10 +29,14 @@ warnings.filterwarnings("ignore")
 # Outputs: test value and corresponding pstand's frequency
 '''
     
-def compute_test(freq, pstand, Ttype = 'Max test', flim=0, args = None):
+def compute_test(freq, pstand, Ttype = 'Max test', flim=None, args = None):
     
     test = np.nan # initialize: test's value
-    freq_test, pstand_test = np.copy(freq[freq<flim]), np.copy(pstand[freq<flim])
+    if flim is not None: 
+        freq_test, pstand_test = np.copy(freq[freq<flim]), np.copy(pstand[freq<flim])
+    else:
+        freq_test, pstand_test = np.copy(freq), np.copy(pstand)
+
     
     
     # Classical test of the highest periodogram value
