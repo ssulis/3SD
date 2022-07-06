@@ -1,6 +1,6 @@
 `` Semi-supervised standardized detection (3SD) of extrasolar planets ''
  
- The directory contains an implementation of the Algorithms 1 (detection) and 2 (p-value computation), as described in Sulis et al., 2021 (submitted to A&A).
+ The directory contains an implementation of the Algorithms 1 (detection) and 2 (p-value computation), as described in Sulis et al., 2021 (accepted in A&A).
  
  It also contains two examples of how to run the detection algorithms:
  
