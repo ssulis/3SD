@@ -1,6 +1,6 @@
 `` Semi-supervised standardized detection (3SD) of extrasolar planets ''
  
- The directory contains an implementation of the Algorithms 1 (detection) and 2 (p-value computation), as described in Sulis et al., 2021 (accepted in A&A).
+ The directory contains an implementation of the Algorithms 1 (detection) and 2 (p-value computation), as described in Sulis et al. 2022 (A&A 667, A04, 2022, https://arxiv.org/abs/2207.03740).
  
  It also contains two examples of how to run the detection algorithms:
  
@@ -17,4 +17,4 @@ For practical implementation, we note that the procedure is versatile in the sen
 To run the codes, you need Python3 and the following libraries:
 >> numpy, matplotlib, astropy, lmfit, PyAstronomy, math, tqdm, statsmodels
 
-Note : The current version is a first release, that will be improved with time. If you have any suggestion, please write me a message on Github or at sophia.sulis@lam.fr.
+If you have any suggestion, please write me a message at sophia.sulis@lam.fr.
